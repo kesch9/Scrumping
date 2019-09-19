@@ -12,6 +12,7 @@
 from bs4 import BeautifulSoup as bs
 import requests
 from pprint import pprint
+from pandas import DataFrame as df
 import time
 
 head = {'User-agent': 'Chrome/77.0.3865.7'}
@@ -44,5 +45,26 @@ for page in range(i):
         vacancy['site'] = 'hh.ru'
         vacancies_list.append(vacancy)
     time.sleep(2)
+
+
+# SuperJOB
+parsed_html_super_job = bs(html_super_job, 'html.parser')
+vac_page = parsed_html_super_job.findAll('div', {'class': '_3zucV _2GPIV f-test-vacancy-item i6-sc _3VcZr'})
+for vac in vac_page:
+    vacancy = {}
+    href = vac.find('a', {'target' : '_blank'})
+    salary = vac.find('span', {'class' : '_3mfro _2Wp8I f-test-text-company-item-salary PlM3e _2JVkc _2VHxz'})
+    vacancy['name_vacancy'] = href.getText()
+    vacancy['a_href'] = href['href']
+    if salary.getText():
+        vacancy['salary'] = salary.getText().replace('\xa0', ' ')
+    else:
+        vacancy['salary'] = min_salary
+    vacancy['site'] = 'superjob.ru'
+    vacancies_list.append(vacancy)
+
 pprint(vacancies_list)
+
+myDataset = df.from_dict(vacancies_list)
+myDataset.to_csv('my.csv')
 # time.sleep(2)
