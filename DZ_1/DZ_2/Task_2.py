@@ -15,6 +15,15 @@ from pprint import pprint
 from pandas import DataFrame as df
 import time
 
+
+def get_salary(sal):
+    sal.replace('руб.', '').replace(' ', '')\
+        .replace('-', ' ').replace('от', '').replace('до', ' ')
+    if sal:
+        return [int(s) for s in sal.split() if s.isdigit()]
+    return [0, 0]
+
+
 head = {'User-agent': 'Chrome/77.0.3865.7'}
 main_link_hh='https://spb.hh.ru'
 main_link_superjob='https://www.superjob.ru'
@@ -25,8 +34,8 @@ parsed_html_hh = bs(html_hh, 'html.parser')
 count_page = parsed_html_hh.findAll('a', {'data-qa': 'pager-page'})
 i = int(count_page[-1].getText())-1
 time.sleep(2)
-min_salary = 'none'
-max_salary = 'none'
+min_salary = 0
+max_salary = 0
 vacancies_list = []
 for page in range(i):
     html_hh = requests.get(main_link_hh + search_hh + str(page), headers=head).text
@@ -39,9 +48,16 @@ for page in range(i):
         vacancy['a_href'] = desc['href']
         salary = vac_page.find('div', {'class': 'vacancy-serp-item__compensation'})
         if salary:
-            vacancy['salary'] = salary.getText().replace('\xa0', ' ')
+            int_sal = get_salary(salary.getText().replace('\xa0', ' '))
+            if len(int_sal) == 2:
+                vacancy['min_salary'] = int_sal[0]
+                vacancy['max_salary'] = int_sal[1]
+            else:
+                vacancy['min_salary'] = min_salary
+                vacancy['max_salary'] = int_sal[0]
         else:
-            vacancy['salary'] = min_salary
+            vacancy['min_salary'] = min_salary
+            vacancy['max_salary'] = min_salary
         vacancy['site'] = 'hh.ru'
         vacancies_list.append(vacancy)
     time.sleep(2)
@@ -56,10 +72,17 @@ for vac in vac_page:
     salary = vac.find('span', {'class' : '_3mfro _2Wp8I f-test-text-company-item-salary PlM3e _2JVkc _2VHxz'})
     vacancy['name_vacancy'] = href.getText()
     vacancy['a_href'] = href['href']
-    if salary.getText():
-        vacancy['salary'] = salary.getText().replace('\xa0', ' ')
+    if salary:
+        int_sal = get_salary(salary.getText().replace('\xa0', ' '))
+        if len(int_sal) == 2:
+            vacancy['min_salary'] = int_sal[0]
+            vacancy['max_salary'] = int_sal[1]
+        else:
+            vacancy['min_salary'] = min_salary
+            vacancy['max_salary'] = max_salary
     else:
-        vacancy['salary'] = min_salary
+        vacancy['min_salary'] = min_salary
+        vacancy['max_salary'] = max_salary
     vacancy['site'] = 'superjob.ru'
     vacancies_list.append(vacancy)
 
